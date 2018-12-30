@@ -1,4 +1,4 @@
-##Python爬虫--POST请求youdao翻译
+##Python爬虫--POST请求youdao翻译##
 
 **链接**：
 
@@ -10,7 +10,7 @@
 
 在模拟输入数据的时候，从源代码的JS脚本得到同时传入的数据还有即时时间以及**加密**的数据，而且和上面的两个教程里的有些不一样，需要看懂代码后**处理**才可以模拟。
 
-(```)
+```
 
 	import urllib.request
 	import urllib.parse
@@ -71,5 +71,5 @@
 		time.sleep(5)
 
 
-(```)
+```
 
