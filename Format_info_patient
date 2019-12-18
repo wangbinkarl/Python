@@ -1,0 +1,80 @@
+#!/usr/bin/env python
+# -*- encoding:utf-8 -*-
+# Purpose:  格式化输入文件，并将输入输出均输出到同个excel表
+# Author: Wangb
+# Note:
+# Last updated on: 20- -
+import pandas as pd
+import numpy as np
+import sys
+#设置编码
+if sys.getdefaultencoding() != 'utf-8':
+    reload(sys)
+    sys.setdefaultencoding('utf-8')
+
+
+csvfile = sys.argv[1]
+df_a = pd.read_csv(csvfile,sep='\t')
+
+df_a_1 = df_a.loc[0:9,'id':'AF']
+df_a_1 = df_a_1.reset_index(drop=True)   				#index重置
+col_id1 = df_a_1['id']
+sid1 = np.unique(col_id1.values)[0]      				#取出某列值，去重
+df_a_1.rename(columns={'AF':sid1}, inplace = True)    			#重命名
+df_a_1.rename(columns={'Gene.ID':'Gene_ID'}, inplace = True)
+df_a_1['NM_ID'] = df_a_1.Gene_ID.apply(lambda x: x.split(':')[1])	#切割列的值生成新列
+df_a_1['Exon'] = df_a_1.Gene_ID.apply(lambda x: x.split(':')[2])
+df_a_1['c_'] = df_a_1.AAChange.apply(lambda x: x.split('(')[0] if x.count('(') == 1 else x)
+df_a_1['p_'] = df_a_1.AAChange.apply(lambda x: x.split('(')[1].split(')')[0] if x.count('(') == 1 else '.')
+del df_a_1['Gene_ID']                                            	#删除该列
+del df_a_1['AAChange']
+#print df_a_1
+#del df_a_1['id']
+#print df_a_1.columns
+
+df_a_2 = df_a.loc[10:19,'id':'AF']
+df_a_2 = df_a_2.reset_index(drop=True)
+col_id2 = df_a_2['id']
+sid2 = np.unique(col_id2.values)[0]
+df_a_2.rename(columns={'AF':sid2}, inplace = True)
+#print df_a_2.columns
+df_a_2.rename(columns={'Gene.ID':'Gene_ID'}, inplace = True)
+df_a_2['NM_ID'] = df_a_2.Gene_ID.apply(lambda x: x.split(':')[1])
+df_a_2['Exon'] = df_a_2.Gene_ID.apply(lambda x: x.split(':')[2])
+df_a_2['c_'] = df_a_2.AAChange.apply(lambda x: x.split('(')[0] if x.count('(') == 1 else x)
+df_a_2['p_'] = df_a_2.AAChange.apply(lambda x: x.split('(')[1].split(')')[0] if x.count('(') == 1 else '.')
+del df_a_2['Gene_ID']
+del df_a_2['AAChange']
+
+df_a_3 = df_a.iloc[20:]
+col_id3 = df_a_3['id']
+sid3 = np.unique(col_id3.values)[0]
+df_a_3.rename(columns={'copynumber':sid3}, inplace = True)
+df_a_3 = df_a_3.reset_index(drop=True)
+df_a_4 = df_a_3[['Type','Gene',sid3]]					#取出三列生成新的DF
+
+#print df_a_4
+#print df_a_1.sort_values(by="Gene")
+#print df_a_2.sort_values(by="Gene")
+									#合并列表，指定列
+result = pd.merge(df_a_1,df_a_2,on=['Type','Gene','NM_ID','Exon','c_','p_','Chr.start','Chr.end','Ref','Alt','ExonicFunc','rsID'],how='outer')
+del result['id_x']
+del result['id_y']
+
+result2 = pd.concat([result,df_a_4],axis=0)				#堆叠列表
+result2 = result2.fillna('.')						#NaN自定义
+
+result2['Hom.Het'] = result2['Hom.Het_x'] + result2['Hom.Het_y']	#合并两列值
+f = lambda x: x.replace("hethet","het").replace("het.","het").replace(".het","het").replace("..",".")
+result2['Hom.Het'] = result2['Hom.Het'].map(f)				#对该列值进行替换
+del result['Hom.Het_x']
+del result['Hom.Het_y']
+
+order = ['Type','Gene','NM_ID','Exon','c_','p_','Chr.start','Chr.end','Ref','Alt','Hom.Het','ExonicFunc','rsID','PB19AE0384-C5C7AA7XKF1-A001L000','FB19AE0385-A3A7AA7XKF1-A001L000']
+result2 = result2[order]						#对列名进行排序
+#print result2
+
+writer = pd.ExcelWriter('output_1.xlsx')				#输出多个sheet
+df_a.to_excel(writer,"输入格式",index = False)
+result2.to_excel(writer,"输出格式",index = False)
+writer.save()
