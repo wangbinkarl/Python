@@ -12,69 +12,72 @@ if sys.getdefaultencoding() != 'utf-8':
     reload(sys)
     sys.setdefaultencoding('utf-8')
 
+def format_m(df):
+	df_a_1 = df.loc[:,'id':'AF']
+	#df_a_1 = df_a_1.reset_index(drop=True)                                  #index重置
+	col_id1 = df_a_1['id']
+	sid1 = np.unique(col_id1.values)[0]                                     #取出某列值，去重
+	df_a_1.rename(columns={'AF':sid1}, inplace = True)                      #重命名
+	df_a_1.rename(columns={'Gene.ID':'Gene_ID'}, inplace = True)
+	df_a_1['NM_ID'] = df_a_1.Gene_ID.apply(lambda x: x.split(':')[1])       #切割列的值生成新列
+	df_a_1['Exon'] = df_a_1.Gene_ID.apply(lambda x: x.split(':')[2])
+	df_a_1['c_'] = df_a_1.AAChange.apply(lambda x: x.split('(')[0] if x.count('(') == 1 else x)
+	df_a_1['p_'] = df_a_1.AAChange.apply(lambda x: x.split('(')[1].split(')')[0] if x.count('(') == 1 else '.')
+	del df_a_1['Gene_ID']                                                   #删除该列
+	del df_a_1['AAChange']
+	return df_a_1
+
+def format_c(df,sid):
+	df.rename(columns={'copynumber':sid}, inplace = True)
+	df_1 = df[['Type','Gene',sid]]
+	return df_1
 
 csvfile = sys.argv[1]
 df_a = pd.read_csv(csvfile,sep='\t')
+df_a_0 = df_a.loc[df_a['Type']=='Mutant']
+df_CNV = df_a.loc[df_a['Type']=='CNV']
 
-df_a_1 = df_a.loc[0:9,'id':'AF']
-df_a_1 = df_a_1.reset_index(drop=True)   				#index重置
-col_id1 = df_a_1['id']
-sid1 = np.unique(col_id1.values)[0]      				#取出某列值，去重
-df_a_1.rename(columns={'AF':sid1}, inplace = True)    			#重命名
-df_a_1.rename(columns={'Gene.ID':'Gene_ID'}, inplace = True)
-df_a_1['NM_ID'] = df_a_1.Gene_ID.apply(lambda x: x.split(':')[1])	#切割列的值生成新列
-df_a_1['Exon'] = df_a_1.Gene_ID.apply(lambda x: x.split(':')[2])
-df_a_1['c_'] = df_a_1.AAChange.apply(lambda x: x.split('(')[0] if x.count('(') == 1 else x)
-df_a_1['p_'] = df_a_1.AAChange.apply(lambda x: x.split('(')[1].split(')')[0] if x.count('(') == 1 else '.')
-del df_a_1['Gene_ID']                                            	#删除该列
-del df_a_1['AAChange']
-#print df_a_1
-#del df_a_1['id']
-#print df_a_1.columns
+col_id0 = df_a_0['id']
+sid0 = np.unique(col_id0.values)
+col_list = ['Type','Gene','Chr.start','Chr.end','Ref','Alt',
+ 'ExonicFunc','rsID','NM_ID','Exon','c_',
+ 'p_']
+df_tmp = pd.DataFrame(columns=col_list)
+#print df_tmp
+for i in range(0,len(sid0)):
+	df_a_x = df_a_0.loc[df_a_0['id']==sid0[i]] 
+	df_a_y = format_m(df_a_x)
+	result = pd.merge(df_tmp,df_a_y,on=['Type','Gene','NM_ID','Exon','c_','p_','Chr.start','Chr.end','Ref','Alt','ExonicFunc','rsID'],how='outer')
+	df_tmp = result
+	#print df_a_y.columns.values
 
-df_a_2 = df_a.loc[10:19,'id':'AF']
-df_a_2 = df_a_2.reset_index(drop=True)
-col_id2 = df_a_2['id']
-sid2 = np.unique(col_id2.values)[0]
-df_a_2.rename(columns={'AF':sid2}, inplace = True)
-#print df_a_2.columns
-df_a_2.rename(columns={'Gene.ID':'Gene_ID'}, inplace = True)
-df_a_2['NM_ID'] = df_a_2.Gene_ID.apply(lambda x: x.split(':')[1])
-df_a_2['Exon'] = df_a_2.Gene_ID.apply(lambda x: x.split(':')[2])
-df_a_2['c_'] = df_a_2.AAChange.apply(lambda x: x.split('(')[0] if x.count('(') == 1 else x)
-df_a_2['p_'] = df_a_2.AAChange.apply(lambda x: x.split('(')[1].split(')')[0] if x.count('(') == 1 else '.')
-del df_a_2['Gene_ID']
-del df_a_2['AAChange']
+col_id3 = df_CNV['id']
+sid3 = np.unique(col_id3.values)
+col_c_list = ['Type','Gene']
+dfc_tmp = pd.DataFrame(columns=col_c_list)
+for j in range(0,len(sid3)):
+	df_c = df_CNV.loc[df_CNV['id']==sid3[j]]
+	df_c_1 = format_c(df_c,sid3[j])
+	result_c = pd.merge(dfc_tmp,df_c_1,on=['Type','Gene'],how='outer')
+	dfc_tmp = result_c
 
-df_a_3 = df_a.iloc[20:]
-col_id3 = df_a_3['id']
-sid3 = np.unique(col_id3.values)[0]
-df_a_3.rename(columns={'copynumber':sid3}, inplace = True)
-df_a_3 = df_a_3.reset_index(drop=True)
-df_a_4 = df_a_3[['Type','Gene',sid3]]					#取出三列生成新的DF
+#print result_c
+result2 = pd.concat([result,result_c],axis=0)				#堆叠列表
+result2 = result2.fillna('.')
 
-#print df_a_4
-#print df_a_1.sort_values(by="Gene")
-#print df_a_2.sort_values(by="Gene")
-									#合并列表，指定列
-result = pd.merge(df_a_1,df_a_2,on=['Type','Gene','NM_ID','Exon','c_','p_','Chr.start','Chr.end','Ref','Alt','ExonicFunc','rsID'],how='outer')
-del result['id_x']
-del result['id_y']
+result2['Hom.Het'] = result2['Hom.Het_x'] + result2['Hom.Het_y']	#合并两列值 ------如分开则需要设置merge参数
+result2['Hom.Het'].replace(["hethet","het.",".het",".."],["het","het","het","."],inplace=True)
 
-result2 = pd.concat([result,df_a_4],axis=0)				#堆叠列表
-result2 = result2.fillna('.')						#NaN自定义
-
-result2['Hom.Het'] = result2['Hom.Het_x'] + result2['Hom.Het_y']	#合并两列值
-f = lambda x: x.replace("hethet","het").replace("het.","het").replace(".het","het").replace("..",".")
-result2['Hom.Het'] = result2['Hom.Het'].map(f)				#对该列值进行替换
-del result['Hom.Het_x']
-del result['Hom.Het_y']
-
-order = ['Type','Gene','NM_ID','Exon','c_','p_','Chr.start','Chr.end','Ref','Alt','Hom.Het','ExonicFunc','rsID','PB19AE0384-C5C7AA7XKF1-A001L000','FB19AE0385-A3A7AA7XKF1-A001L000']
+sidx = list(sid0)+list(sid3)
+sidx = list(set(sidx))
+sidx.sort(reverse = True)
+order_raw = ['Type','Gene','NM_ID','Exon','c_','p_','Chr.start','Chr.end','Ref','Alt','Hom.Het','ExonicFunc','rsID']
+order = order_raw+sidx
 result2 = result2[order]						#对列名进行排序
 #print result2
 
-writer = pd.ExcelWriter('output_1.xlsx')				#输出多个sheet
+writer = pd.ExcelWriter('output_1.0.1.beta.xlsx')				#输出多个sheet
 df_a.to_excel(writer,"输入格式",index = False)
 result2.to_excel(writer,"输出格式",index = False)
 writer.save()
+
