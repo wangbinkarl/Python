@@ -1,0 +1,73 @@
+#!/usr/bin/env python
+# -*- encoding:utf-8 -*-
+# Purpose: 提取JSON文件中的index信息并且找出对应sampleid
+# Author: Wangb
+# Note:
+# Last updated on: 20- -
+import sys
+import json
+from collections import defaultdict
+import os
+import subprocess
+
+if len(sys.argv) < 3:
+	print "Usage:python {} input[json] output ".format(sys.argv[0])
+	exit(1)
+input_file = sys.argv[1]
+output_file = sys.argv[2]
+out = open(output_file,'w')
+#out.write("SampleID\tIndex\tLane\tReads\tBase(Mb)\tQ20\tQ30")
+out.write("SampleID\tIndex\tLane\tReads\n")
+mydict = defaultdict(list)
+mydict1 = {}
+bases = 0
+with open(input_file) as f:
+	myjson = json.load(f)
+	for i in  myjson["ReadInfosForLanes"]:
+		Lane = i["LaneNumber"]
+	for i in myjson["ConversionResults"]:
+		for demux in i["DemuxResults"]:
+			sid = demux["SampleId"]	
+			Readnum = demux["NumberReads"]
+			for sample in demux["IndexMetrics"]:
+				index = sample["IndexSequence"]
+				values = str(Readnum)+','+index
+				#保存Json中存在的id
+				mydict[sid].append(values)		
+			for base in demux["ReadMetrics"]:
+				bases += base["TrimmedBases"]
+			
+	for k,v in mydict.items():
+		va = v[0].encode('utf-8').split(',')
+		out.write("{}\t{}\t{}\t{}\n".format(k,va[1],Lane,va[0]))		
+	for uk in myjson["UnknownBarcodes"]:
+		for barcode,reads in uk["Barcodes"].items():
+			#保存未知的barcode
+			mydict1[barcode] = reads
+
+input_dir = os.path.abspath(input_file)
+input_dir1 = os.path.dirname(input_dir)
+#打开SampleSheet
+samplesheet = "{}/SampleSheet.csv.sr".format(input_dir1)
+
+mylist = []
+mylist1 = []
+for k,v in mydict1.items(): 
+	p7_index, p5_index= k.split('+')
+	#根据json中的barcode提取对应的id号
+	sampleid = subprocess.check_output("grep -P '%s.*?%s' %s|cut -d, -f2" % (p7_index,p5_index,samplesheet),shell=True).strip()
+	if sampleid:
+		if '\n' in sampleid:
+			sampleid  = sampleid.split('\n')[0]
+		if sampleid not in mylist:
+			mylist.append(sampleid)
+			#print sampleid,v
+			if not mydict.has_key(sampleid):
+				mylist1.append(k)		
+				out.write("{}\t{}\t{}\t{}\n".format(sampleid,k,Lane,v))
+#排序输出Unk index 
+for k,v in sorted(mydict1.items(),key = lambda x:x[1],reverse = True):
+	if k not in mylist1:
+		out.write("{}\t{}\n".format(k,v))
+
+out.close()
