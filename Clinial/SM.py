@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-# @Time:2019/1/7 10:51
-# @Author:Zhangjf
-# @File:Sync_monitor_Module.py
+
 
 import sys,os
 import argparse
