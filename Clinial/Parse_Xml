@@ -1,0 +1,28 @@
+def runinfo_parser(runinfofile):
+    machinedict={"K00422":"4k2","E00516":"X1","E00515":"X2","E00514":"X3","E00517":"X4","E00499":"X5","K00141":"4k1",
+             "E00572":"YZ1", "E00591":"YZ2", "ST-E00578":"YZ3", "ST-E00600":"YZ4",
+             "A00248":"NV4","A00254":"NV2","A00290":"NV3","A00292":"NV1","K00167":"4k3","NDX550219":"NX1","NDX550249":"NX2"
+            }
+    try:
+        import xml.etree.cElementTree as ET
+    except ImportError:
+        import xml.etree.ElementTree as ET
+    tree=ET.ElementTree(file=runinfofile)
+    root=tree.getroot()
+    run=root.getchildren()[0]
+    runid=run.attrib["Id"]
+    flowcell=runid.split("_")[-1][0]
+    date, machineid=runid.split("_")[:2]
+    machine=machinedict[machineid]
+    reads_len=[]
+    for read in run.find("Reads"):
+        reads_len.append(int(read.attrib['NumCycles']))
+    lane_tiles=defaultdict(list)
+    for tile in run.find("FlowcellLayout").find("TileSet").find("Tiles").findall("Tile"):
+        tileid=tile.text
+        lane_tiles[tileid[0]].append(tileid)
+    image_channels=[]
+    for channel in run.find("ImageChannels").findall("Name"):
+            image_channels.append(channel.text.lower())
+    return runid, machine, flowcell, date, reads_len, lane_tiles, image_channels
+runinfo_parser("./RunInfo.xml")
