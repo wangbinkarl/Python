@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+
 def runinfo_parser(runinfofile):
     machinedict={"K00422":"4k2","E00516":"X1","E00515":"X2","E00514":"X3","E00517":"X4","E00499":"X5","K00141":"4k1",
              "E00572":"YZ1", "E00591":"YZ2", "ST-E00578":"YZ3", "ST-E00600":"YZ4",
