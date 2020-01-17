@@ -1,0 +1,48 @@
+#!/usr/bin/env python
+# -*- encoding:utf-8 -*-
+# Purpose:   calculate base content of the same site 
+# Author: Wangb
+# Note:
+# Last updated on: 20- -
+import sys
+import os
+from collections import defaultdict
+import pandas as pd
+
+def index_del(index):
+	index_dict = defaultdict(list)
+	pct_dict = {}
+	with open(index,'r') as f:
+		for line in f:
+			length = len(line.strip())
+			for i in range(0,length):
+				index_dict[i].append(line[i])
+
+	for key in index_dict.keys():
+                A = index_dict[key].count('A')
+                T = index_dict[key].count('T')
+                C = index_dict[key].count('C')
+                G = index_dict[key].count('G')
+                total = A+T+C+G
+		A_pct = round(A*1./total,2) if A != 0 else 0
+		T_pct = round(T*1./total,2) if T != 0 else 0
+		C_pct = round(C*1./total,2) if C != 0 else 0
+		G_pct = round(G*1./total,2) if G != 0 else 0
+		info = [A_pct,T_pct,C_pct,G_pct]
+		pct_dict[key] = info
+	return pct_dict
+
+def main():
+	p7_index = sys.argv[1]
+	p5_index = sys.argv[2]
+	p7_dict	= index_del(p7_index)
+	p5_dict = index_del(p5_index)
+
+	p7_df = pd.DataFrame(data = p7_dict)
+	p5_df = pd.DataFrame(data = p5_dict)
+	p7_df.to_csv('p7_out.csv',index=None)
+	p5_df.to_csv('p5_out.csv',index=None)
+
+
+if __name__ == '__main__':
+	main()
