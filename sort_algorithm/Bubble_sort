@@ -1,0 +1,10 @@
+def bubble_sort(array):
+        """冒泡排序"""
+        for i in range(len(array)-1,-1,-1):
+                for j in range(i):
+                        if array[j] > array[j+1]:
+                                array[j],array[j+1] = array[j+1],array[j]
+        return array
+
+item = [34, 87, 3, 48, 98, 19, 82]
+result = bubble_sort(item)
