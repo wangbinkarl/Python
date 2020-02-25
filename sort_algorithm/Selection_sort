@@ -1,0 +1,14 @@
+def select_sort(origin_item, comp=lambda a, b : a < b):
+        """选择排序"""
+        item = origin_item[:]
+        for i in range(len(item)-1):
+                min_index = i
+                for j in range(i+1, len(item)):
+                        if comp(item[j], item[min_index]):
+                                min_index = j
+                #从未排序的数中找到最小值并交换值       
+                item[i], item[min_index] = item[min_index], item[i]
+        return item
+
+item = [34, 87, 3, 48, 98, 19, 82]
+result = select_sort(item)
