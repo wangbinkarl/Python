@@ -1,0 +1,71 @@
+#!/usr/bin/env python
+# -*- encoding:utf-8 -*-
+# Purpose: 根据给定的info文件拆分fq数据
+# Author: Wangb
+# Note:
+# Last updated on: 2019-10-14
+import sys
+import gzip
+
+def info(sample_info):
+	'''
+	对sample.info文件中每行信息建立字典，并且建立打开子文件的字典
+	'''
+	dict_barcode = {}
+	dict_dir = {}
+	with open(sample_info) as f:
+		for line in f.readlines():
+			idx,barcode = line.strip().split()
+			dict_barcode[barcode] = idx
+			#设置子文件名称
+			file_name1 = '%s_S1_L001_R1_001.fastq.gz' % idx
+			file_name2 = '%s_S1_L001_R2_001.fastq.gz' % idx
+			file1 = gzip.open(file_name1,'w')
+			file2 = gzip.open(file_name2,'w')
+			dict_dir = dict({file_name1:file1,file_name2:file2},**dict_dir)
+	return dict_barcode,dict_dir
+
+
+
+def match(read1,read2,dict_barcode,dict_dir):
+	'''
+	对read1进行从第四位碱基开始匹配
+	'''
+	R1_R2_dict = {}
+	for barcode in dict_barcode.keys():
+		if read1[1][3:len(barcode)+3] == barcode:
+			key1 = '%s_S1_L001_R1_001.fastq.gz' % dict_barcode[barcode]
+			dict_dir[key1].write('\n'.join(read1)+'\n') 
+			read_flag = read1[0].split()[0]
+			#匹配read2
+			if read2[0].split()[0] == read1[0].split()[0]:
+				key2 = '%s_S1_L001_R2_001.fastq.gz' % dict_barcode[barcode]
+				dict_dir[key2].write('\n'.join(read2)+'\n')
+
+def main():
+	#传入参数
+	sample_info = sys.argv[1]
+	input_file1 = sys.argv[2]
+	input_file2 = sys.argv[3]
+	#打开gz文件
+	fq1 = gzip.open(input_file1,'rt')
+	fq2 = gzip.open(input_file2,'rt')
+	#fq1 = open(input_file1,'rt') 
+	#fq2 = open(input_file2,'rt')
+	dict_barcode,dict_dir = info(sample_info)
+	while True:
+		#read1,read2每次读取四行
+		read1 = [fq1.readline().strip() for i in range(4)]
+		if not read1[0]:
+			break
+		read2 = [fq2.readline().strip() for i in range(4)]
+		match(read1,read2,dict_barcode,dict_dir)
+	#关闭文件
+	for dir1 in dict_dir.keys():
+		dict_dir[dir1].close()
+	
+if __name__=='__main__':
+	if len(sys.argv) < 2:
+                print "Usage:\npython {} input1[Sample.info] input2[fq1] input3[fq2] ".format(sys.argv[0])
+	else:
+	        main()
