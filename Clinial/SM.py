@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-
+##同步脚本
 
 import sys,os
 import argparse
