@@ -1,0 +1,49 @@
+#########TGI指数计算
+##TGI指数计算公式 = 目标群体中具有某一特征的群体所占比例 / 总体中具有相同特征的群体所占比例  * 标准数100
+##20200509
+##数据格式
+               品牌名称        买家昵称                付款日期  订单状态    实付金额  邮费   省份    城市  购买数量
+0      viva la vida        做快淘饭 2019-04-18 00:03:00  交易成功  22.320   0   北京   北京市     1
+1      viva la vida       作自有世祟 2019-02-17 00:03:51  交易成功  87.000   0   上海   上海市     1
+2      viva la vida        作雪白室 2019-04-18 00:01:43  交易成功  97.660   0  福建省   福州市     2
+3      viva la vida      作美女购物主 2019-01-11 23:35:01  交易成功  37.230   0  河南省   安阳市     3
+4      viva la vida      作美女购物主 2019-02-18 14:16:03  交易成功  29.500   0  河南省   安阳市     2
+
+
+df = pd.read_excel('TGI指数案例数据.xlsx')
+df.info()
+
+#单个用户的分类
+gp_user = df.groupby('买家昵称')['实付金额'].mean().reset_index()
+
+def in_high(x):
+    if x>50:
+        return 'high passager'
+    else:
+        return 'low passager'
+gp_user['passager_type'] = gp_user['实付金额'].apply(in_high)
+#匹配城市
+##先去重
+df_dup = df.loc[df.duplicated('买家昵称') == False,:]
+##合并
+df_merge = pd.merge(gp_user,df_dup,left_on='买家昵称',right_on='买家昵称',how='left')
+##筛选需要的列
+df_merge = df_merge[['买家昵称','passager_type','省份','城市']]
+##透视表
+result = pd.pivot_table(df_merge,index=['省份','城市'],columns = 'passager_type',aggfunc='count')
+tgi = pd.merge(result['买家昵称']['high passager'].reset_index(),result['买家昵称']['low passager'].reset_index(),left_on=['省份','城市'],right_on=['省份','城市'],how='inner')
+
+##构建需要的列
+tgi['总人数']= tgi['high passager'] + tgi['low passager']
+tgi['高客单占比'] = tgi['high passager'] / tgi['总人数']
+##去除空值
+tgi.info()
+tgi1 = tgi.dropna()
+##计算总体中的特征群体比例
+total_per = tgi1['high passager'].sum()/tgi1['总人数'].sum()
+##计算TGI
+tgi1['TGI'] = tgi1['高客单占比'] / total_per * 100
+
+tgi1 = tgi1.sort_values('TGI',ascending=False)
+#TGI指数能够显示偏好的强弱，但很容易让人忽略具体的样本量大小  ***
+tgi2 = tgi1.loc[tgi1['总人数'] > tgi1['总人数'].mean(),:]
