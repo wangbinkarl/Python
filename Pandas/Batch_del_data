@@ -1,0 +1,17 @@
+## 批量处理数据，取出销售额TOP5的品牌及销售额
+
+result = pd.DataFrame()
+
+for name in os.listdir(): 
+    df = pd.read_excel(name) 
+    df['销售额'] = df['访客数']*df['转化率']*df['客单价'] 
+    df_sum = df.groupby('品牌')['销售额'].sum().reset_index()
+    df_sum['类目'] = name.replace('.xlsx','') 
+    result=pd.concat([result,df_sum]) 
+
+#合计品牌销售额并排序
+final = result.groupby('品牌')['销售额'].sum().reset_index().sort_values('销售额',ascending=False)
+
+#取消科学计数法
+pd.set_option('display.float_format',lambda x:'%.2f' % x)
+
