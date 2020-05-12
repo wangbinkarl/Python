@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- encoding:utf-8 -*-
-# Purpose:  按mis1拆分数据
+# Purpose:  按mis1拆分fastq数据
 # Author: Wangb
 # Note:
 # Last updated on: 2019-9-16
@@ -9,7 +9,7 @@ import os
 import re
 
 def indexin(indexf):
-#	读取index文件，将sample与P5,P7建立字典 
+#	读取index文件，将sample与P5,P7建立字典 ,该文件就是SampleSheet
 	
 	index_dict = {}
 	for line in open(indexf,'r'):
@@ -59,7 +59,7 @@ indexdict = indexin(index)
 #创建输出文件
 dir_dict = {}
 dirname = [value for value in indexdict.values()]
-for name in dirname:
+for name in dirname:                                #将需要生成的文件与该文件名建立字典
 	nameR1 = '%s_R1.fastq' % name
 	nameR2 = '%s_R2.fastq' % name
 	file1 = open(nameR1,'w')
@@ -70,7 +70,7 @@ for name in dirname:
 read1 = gzip.open(test_R1,'rt')
 read2 = gzip.open(test_R2,'rt')
 
-while True:
+while True:　　　　　　　　　　　　　　　　　　　　　　＃遍历ｆａｓｔｑ，每次读四行
 	seq1 = [read1.readline().strip() for i in range(4)]
 	if not seq1:
     		break
