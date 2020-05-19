@@ -9,7 +9,9 @@ import os
 import re
 
 def indexin(indexf):
-#	读取index文件，将sample与P5,P7建立字典 ,该文件就是SampleSheet
+#	读取index文件，将sample与P5,P7建立字典 
+#	该文件格式为 
+#	sampleid,p7,p5
 	
 	index_dict = {}
 	for line in open(indexf,'r'):
