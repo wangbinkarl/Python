@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- encoding:utf-8 -*-
-# Purpose: 
+# Purpose:  根据index提取数据 检查个数
 # Author: Wangb
 # Note:
 # Last updated on: 20- -
